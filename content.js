@@ -88,7 +88,37 @@ function timestampToSeconds(timestamp) {
   return 0;
 }
 
-function addMarkerToVideo(seconds, comment) {
+function groupCloseTimestamps(timestampedComments, threshold = 5) {
+  const groupedComments = [];
+  let currentGroup = [];
+
+  timestampedComments.sort(
+    (a, b) => timestampToSeconds(a.time) - timestampToSeconds(b.time)
+  );
+
+  for (let i = 0; i < timestampedComments.length; i++) {
+    if (
+      currentGroup.length === 0 ||
+      Math.abs(
+        timestampToSeconds(timestampedComments[i].time) -
+          timestampToSeconds(currentGroup[0].time)
+      ) <= threshold
+    ) {
+      currentGroup.push(timestampedComments[i]);
+    } else {
+      groupedComments.push(currentGroup);
+      currentGroup = [timestampedComments[i]];
+    }
+  }
+
+  if (currentGroup.length > 0) {
+    groupedComments.push(currentGroup);
+  }
+
+  return groupedComments;
+}
+
+function addMarkerToVideo(seconds, comments) {
   const video = document.querySelector("video");
   const progressBar = document.querySelector(".ytp-progress-bar");
 
@@ -104,7 +134,10 @@ function addMarkerToVideo(seconds, comment) {
   const tooltip = document.createElement("div");
   tooltip.classList.add("timestamp-tooltip");
 
-  tooltip.innerText = comment;
+  // Display multiple comments in the tooltip
+  tooltip.innerHTML = comments
+    .map((comment) => `<p>${comment.text}</p>`)
+    .join("");
 
   marker.appendChild(tooltip);
 
@@ -121,17 +154,19 @@ function displayMarkers(timestampedComments) {
   const video = document.querySelector("video");
   if (!video) return;
 
+  const groupedComments = groupCloseTimestamps(timestampedComments);
+
   if (video.readyState >= 1) {
     // HAVE_METADATA
-    timestampedComments.forEach((commentObj) => {
-      const seconds = timestampToSeconds(commentObj.time);
-      addMarkerToVideo(seconds, commentObj.text);
+    groupedComments.forEach((group) => {
+      const seconds = timestampToSeconds(group[0].time);
+      addMarkerToVideo(seconds, group);
     });
   } else {
     video.addEventListener("loadedmetadata", () => {
-      timestampedComments.forEach((commentObj) => {
-        const seconds = timestampToSeconds(commentObj.time);
-        addMarkerToVideo(seconds, commentObj.text);
+      groupedComments.forEach((group) => {
+        const seconds = timestampToSeconds(group[0].time);
+        addMarkerToVideo(seconds, group);
       });
     });
   }
