@@ -14,7 +14,7 @@ function injectStyles() {
       position: absolute;
       bottom: 0;
       width: 12px;
-      height: 100%; /* Change to full height */
+      height: 100%;
       transform: translateX(-50%);
       background: transparent;
       cursor: pointer;
@@ -24,11 +24,11 @@ function injectStyles() {
     .timestamp-marker::before {
       content: '';
       position: absolute;
-      bottom: 0; /* Change from top to bottom */
+      bottom: 0;
       left: 50%;
       width: 4px;
       height: 12px;
-      background-color: red;
+      background-color: #ff0000;
       transform: translateX(-50%);
     }
     .timestamp-marker:hover .timestamp-tooltip {
@@ -40,13 +40,42 @@ function injectStyles() {
       bottom: 100%;
       left: 50%;
       transform: translateX(-50%);
-      background-color: rgba(0, 0, 0, 0.85);
-      color: white;
-      padding: 8px;
+      background-color: rgba(28, 28, 28, 0.95);
+      color: #ffffff;
+      padding: 12px;
+      font-size: 14px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 10001;
+      max-width: 300px;
+      width: max-content;
+    }
+    .timestamp-comment {
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .timestamp-comment:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .timestamp-text {
+      margin-bottom: 5px;
+      line-height: 1.4;
+    }
+    .go-to-comment {
+      background-color: #3ea6ff;
+      color: #000000;
+      border: none;
+      padding: 6px 12px;
       font-size: 12px;
       border-radius: 4px;
-      white-space: nowrap;
-      z-index: 10001;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .go-to-comment:hover {
+      background-color: #65b8ff;
     }
   `;
   document.head.appendChild(style);
@@ -139,8 +168,10 @@ function addMarkerToVideo(seconds, comments) {
   tooltip.innerHTML = comments
     .map(
       (comment, index) => `
-      <p>${comment.text}</p>
-      <button class="go-to-comment" data-index="${index}">Go to comment</button>
+      <div class="timestamp-comment">
+        <p class="timestamp-text">${comment.text}</p>
+        <button class="go-to-comment" data-index="${index}">Go to comment</button>
+      </div>
     `
     )
     .join("");
@@ -247,9 +278,11 @@ window.addEventListener("load", () => {
 function scrollToComment(commentElement) {
   if (commentElement) {
     commentElement.scrollIntoView({ behavior: "smooth", block: "center" });
-    commentElement.style.backgroundColor = "yellow";
+    commentElement.style.transition = "none";
+    commentElement.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
     setTimeout(() => {
-      commentElement.style.backgroundColor = "";
-    }, 2000);
+      commentElement.style.transition = "background-color 1.5s ease-out";
+      commentElement.style.backgroundColor = "transparent";
+    }, 0);
   }
 }
