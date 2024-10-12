@@ -200,6 +200,8 @@ function displayMarkers(timestampedComments) {
   const video = document.querySelector("video");
   if (!video) return;
 
+  clearExistingMarkers(); // Clear existing markers before adding new ones
+
   const groupedComments = groupCloseTimestamps(timestampedComments);
 
   if (video.readyState >= 1) {
@@ -228,6 +230,11 @@ function debounce(func, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
+}
+
+function clearExistingMarkers() {
+  const existingMarkers = document.querySelectorAll(".timestamp-marker");
+  existingMarkers.forEach((marker) => marker.remove());
 }
 
 // Wait for the comments to load
@@ -259,12 +266,26 @@ function observeCommentsSection(retryCount = 0, maxRetries = 4) {
     const timestampedComments = getCommentsWithTimestamps();
     if (timestampedComments.length > 0) {
       displayMarkers(timestampedComments);
+    } else {
+      clearExistingMarkers(); // Clear markers if no timestamped comments are found
     }
   }, 500); // 500ms debounce time
 
   const observer = new MutationObserver(debouncedCallback);
 
   observer.observe(targetNode, config);
+
+  // Observe changes to the video element
+  const videoObserver = new MutationObserver(() => {
+    clearExistingMarkers();
+    debouncedCallback();
+  });
+
+  const videoConfig = { attributes: true, attributeFilter: ["src"] };
+  const videoElement = document.querySelector("video");
+  if (videoElement) {
+    videoObserver.observe(videoElement, videoConfig);
+  }
 }
 
 // Run script after the page fully loads
