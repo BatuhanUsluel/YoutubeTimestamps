@@ -137,6 +137,18 @@ function displayMarkers(timestampedComments) {
   }
 }
 
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 // Wait for the comments to load
 function observeCommentsSection(retryCount = 0, maxRetries = 4) {
   const targetNode = document.querySelector("#comments");
@@ -160,14 +172,16 @@ function observeCommentsSection(retryCount = 0, maxRetries = 4) {
   }
 
   const config = { childList: true, subtree: true };
-  const observer = new MutationObserver(() => {
-    console.log("MutationObserver triggered");
+
+  const debouncedCallback = debounce(() => {
+    console.log("MutationObserver triggered (debounced)");
     const timestampedComments = getCommentsWithTimestamps();
     if (timestampedComments.length > 0) {
       displayMarkers(timestampedComments);
-      // observer.disconnect(); // Stop observing after markers are added
     }
-  });
+  }, 500); // 500ms debounce time
+
+  const observer = new MutationObserver(debouncedCallback);
 
   observer.observe(targetNode, config);
 }
