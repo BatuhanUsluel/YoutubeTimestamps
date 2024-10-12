@@ -68,6 +68,7 @@ function getCommentsWithTimestamps() {
           timestampedComments.push({
             time: timestamp,
             text: line.trim(),
+            element: comment.closest("ytd-comment-thread-renderer"), // Store the comment element
           });
         });
       }
@@ -136,8 +137,22 @@ function addMarkerToVideo(seconds, comments) {
 
   // Display multiple comments in the tooltip
   tooltip.innerHTML = comments
-    .map((comment) => `<p>${comment.text}</p>`)
+    .map(
+      (comment, index) => `
+      <p>${comment.text}</p>
+      <button class="go-to-comment" data-index="${index}">Go to comment</button>
+    `
+    )
     .join("");
+
+  // Add click event listeners to the "Go to comment" buttons
+  tooltip.querySelectorAll(".go-to-comment").forEach((button) => {
+    button.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevent the marker click event from firing
+      const index = parseInt(button.getAttribute("data-index"));
+      scrollToComment(comments[index].element);
+    });
+  });
 
   marker.appendChild(tooltip);
 
@@ -227,3 +242,14 @@ window.addEventListener("load", () => {
   observeCommentsSection();
   console.log("YouTube Timestamp Extension Loaded");
 });
+
+// Add a new function to scroll to the comment
+function scrollToComment(commentElement) {
+  if (commentElement) {
+    commentElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    commentElement.style.backgroundColor = "yellow";
+    setTimeout(() => {
+      commentElement.style.backgroundColor = "";
+    }, 2000);
+  }
+}
