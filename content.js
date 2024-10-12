@@ -13,21 +13,21 @@ function injectStyles() {
     .timestamp-marker {
       position: absolute;
       bottom: 0;
-      width: 12px; /* Increased width for better hover area */
-      height: 100%;
+      width: 12px;
+      height: 3px;
       transform: translateX(-50%);
-      background: transparent; /* Transparent background */
+      background: transparent;
       cursor: pointer;
       pointer-events: auto;
-      z-index: 10; /* Ensure marker is above the progress bar */
+      z-index: 10000; /* Increased z-index */
     }
     .timestamp-marker::before {
       content: '';
       position: absolute;
       top: 0;
       left: 50%;
-      width: 4px; /* Visual marker width */
-      height: 100%;
+      width: 4px;
+      height: 12px;
       background-color: red;
       transform: translateX(-50%);
     }
@@ -37,7 +37,7 @@ function injectStyles() {
     .timestamp-tooltip {
       display: none;
       position: absolute;
-      bottom: 100%;
+      bottom: 100%; /* Adjusted to position above the marker */
       left: 50%;
       transform: translate(-50%, -5px);
       background-color: rgba(0, 0, 0, 0.85);
@@ -46,7 +46,7 @@ function injectStyles() {
       font-size: 12px;
       border-radius: 4px;
       white-space: nowrap;
-      z-index: 9999;
+      z-index: 10001; /* Ensure tooltip is above the marker */
     }
   `;
   document.head.appendChild(style);
@@ -105,20 +105,6 @@ function addMarkerToVideo(seconds, comment) {
 
   marker.appendChild(tooltip);
 
-  // Debug: Log tooltip creation
-  console.log("Tooltip created:", tooltip);
-
-  // Debug: Add hover event listeners
-  marker.addEventListener("mouseenter", () => {
-    console.log("Marker hovered");
-    tooltip.style.display = "block";
-  });
-
-  marker.addEventListener("mouseleave", () => {
-    console.log("Marker unhovered");
-    tooltip.style.display = "none";
-  });
-
   // Seek video to the timestamp when marker is clicked
   marker.addEventListener("click", () => {
     video.currentTime = seconds;
@@ -126,12 +112,8 @@ function addMarkerToVideo(seconds, comment) {
   });
 
   progressList.appendChild(marker);
-
-  // Debug: Log marker addition
-  console.log("Marker added to progress list:", marker);
 }
 
-// After collecting timestamped comments, insert markers
 function displayMarkers(timestampedComments) {
   const video = document.querySelector("video");
   if (!video) return;
