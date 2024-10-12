@@ -1,8 +1,8 @@
 console.log("YouTube Timestamp Extension Loaded");
 
-// Helper function to find timestamps in comments (e.g., "1:23", "10:00", etc.)
+// Helper function to find timestamps in comments
 function findTimestamps(text) {
-  const timestampPattern = /\b(\d{1,2}:\d{2})\b/g;
+  const timestampPattern = /\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g;
   return text.match(timestampPattern);
 }
 
@@ -13,23 +13,40 @@ function injectStyles() {
     .timestamp-marker {
       position: absolute;
       bottom: 0;
-      width: 2px;
+      width: 12px; /* Increased width for better hover area */
+      height: 100%;
+      transform: translateX(-50%);
+      background: transparent; /* Transparent background */
+      cursor: pointer;
+      pointer-events: auto;
+      z-index: 10; /* Ensure marker is above the progress bar */
+    }
+    .timestamp-marker::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 4px; /* Visual marker width */
       height: 100%;
       background-color: red;
       transform: translateX(-50%);
-      pointer-events: auto;
+    }
+    .timestamp-marker:hover .timestamp-tooltip {
+      display: block;
     }
     .timestamp-tooltip {
+      display: none;
       position: absolute;
-      bottom: 20px;
-      background-color: black;
+      bottom: 100%;
+      left: 50%;
+      transform: translate(-50%, -5px);
+      background-color: rgba(0, 0, 0, 0.85);
       color: white;
-      padding: 5px;
+      padding: 8px;
       font-size: 12px;
-      border-radius: 5px;
+      border-radius: 4px;
       white-space: nowrap;
-      transform: translateX(-50%);
-      pointer-events: none;
+      z-index: 9999;
     }
   `;
   document.head.appendChild(style);
@@ -70,9 +87,9 @@ function timestampToSeconds(timestamp) {
 
 function addMarkerToVideo(seconds, comment) {
   const video = document.querySelector("video");
-  const progressBar = document.querySelector(".ytp-progress-bar");
+  const progressList = document.querySelector(".ytp-progress-list");
 
-  if (!progressBar || !video || !video.duration) return;
+  if (!progressList || !video || !video.duration) return;
 
   const marker = document.createElement("div");
   marker.classList.add("timestamp-marker");
@@ -80,19 +97,38 @@ function addMarkerToVideo(seconds, comment) {
   const leftPercent = (seconds / video.duration) * 100;
   marker.style.left = `${leftPercent}%`;
 
-  // Display comment on hover
+  // Create tooltip element
+  const tooltip = document.createElement("div");
+  tooltip.classList.add("timestamp-tooltip");
+
+  tooltip.innerText = comment;
+
+  marker.appendChild(tooltip);
+
+  // Debug: Log tooltip creation
+  console.log("Tooltip created:", tooltip);
+
+  // Debug: Add hover event listeners
   marker.addEventListener("mouseenter", () => {
-    const tooltip = document.createElement("div");
-    tooltip.classList.add("timestamp-tooltip");
-    tooltip.innerText = comment;
-    marker.appendChild(tooltip);
+    console.log("Marker hovered");
+    tooltip.style.display = "block";
   });
 
   marker.addEventListener("mouseleave", () => {
-    marker.innerHTML = "";
+    console.log("Marker unhovered");
+    tooltip.style.display = "none";
   });
 
-  progressBar.appendChild(marker);
+  // Seek video to the timestamp when marker is clicked
+  marker.addEventListener("click", () => {
+    video.currentTime = seconds;
+    video.play();
+  });
+
+  progressList.appendChild(marker);
+
+  // Debug: Log marker addition
+  console.log("Marker added to progress list:", marker);
 }
 
 // After collecting timestamped comments, insert markers
@@ -123,10 +159,11 @@ function observeCommentsSection() {
   if (!targetNode) return;
 
   const config = { childList: true, subtree: true };
-  const observer = new MutationObserver((mutationsList) => {
+  const observer = new MutationObserver(() => {
     const timestampedComments = getCommentsWithTimestamps();
     if (timestampedComments.length > 0) {
       displayMarkers(timestampedComments);
+      observer.disconnect(); // Stop observing after markers are added
     }
   });
 
