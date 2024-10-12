@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Timestamped Comments",
+  "version": "1.0",
+  "description": "Display timestamped comments on the video timeline.",
+  "permissions": ["tabs"],
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "host_permissions": ["*://www.youtube.com/*"]
+}

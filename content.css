@@ -1,0 +1,17 @@
+.timestamp-marker {
+  position: absolute;
+  height: 100%;
+  width: 3px;
+  background-color: red;
+  cursor: pointer;
+}
+
+.timestamp-tooltip {
+  position: absolute;
+  bottom: 100%;
+  background-color: black;
+  color: white;
+  padding: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+}
