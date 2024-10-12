@@ -14,17 +14,17 @@ function injectStyles() {
       position: absolute;
       bottom: 0;
       width: 12px;
-      height: 3px;
+      height: 100%; /* Change to full height */
       transform: translateX(-50%);
       background: transparent;
       cursor: pointer;
       pointer-events: auto;
-      z-index: 10000; /* Increased z-index */
+      z-index: 10000;
     }
     .timestamp-marker::before {
       content: '';
       position: absolute;
-      top: 0;
+      bottom: 0; /* Change from top to bottom */
       left: 50%;
       width: 4px;
       height: 12px;
@@ -37,16 +37,16 @@ function injectStyles() {
     .timestamp-tooltip {
       display: none;
       position: absolute;
-      bottom: 100%; /* Adjusted to position above the marker */
+      bottom: 100%;
       left: 50%;
-      transform: translate(-50%, -5px);
+      transform: translateX(-50%);
       background-color: rgba(0, 0, 0, 0.85);
       color: white;
       padding: 8px;
       font-size: 12px;
       border-radius: 4px;
       white-space: nowrap;
-      z-index: 10001; /* Ensure tooltip is above the marker */
+      z-index: 10001;
     }
   `;
   document.head.appendChild(style);
@@ -87,9 +87,9 @@ function timestampToSeconds(timestamp) {
 
 function addMarkerToVideo(seconds, comment) {
   const video = document.querySelector("video");
-  const progressList = document.querySelector(".ytp-progress-list");
+  const progressBar = document.querySelector(".ytp-progress-bar");
 
-  if (!progressList || !video || !video.duration) return;
+  if (!progressBar || !video || !video.duration) return;
 
   const marker = document.createElement("div");
   marker.classList.add("timestamp-marker");
@@ -111,7 +111,7 @@ function addMarkerToVideo(seconds, comment) {
     video.play();
   });
 
-  progressList.appendChild(marker);
+  progressBar.appendChild(marker);
 }
 
 function displayMarkers(timestampedComments) {
