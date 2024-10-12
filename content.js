@@ -60,15 +60,18 @@ function getCommentsWithTimestamps() {
   const timestampedComments = [];
 
   comments.forEach((comment) => {
-    const timestamps = findTimestamps(comment.textContent);
-    if (timestamps) {
-      timestamps.forEach((timestamp) => {
-        timestampedComments.push({
-          time: timestamp,
-          text: comment.textContent,
+    const lines = comment.textContent.split("\n");
+    lines.forEach((line) => {
+      const timestamps = findTimestamps(line);
+      if (timestamps) {
+        timestamps.forEach((timestamp) => {
+          timestampedComments.push({
+            time: timestamp,
+            text: line.trim(),
+          });
         });
-      });
-    }
+      }
+    });
   });
 
   console.log("Found", timestampedComments.length, "comments with timestamps");
@@ -135,17 +138,34 @@ function displayMarkers(timestampedComments) {
 }
 
 // Wait for the comments to load
-function observeCommentsSection() {
+function observeCommentsSection(retryCount = 0, maxRetries = 4) {
   const targetNode = document.querySelector("#comments");
+  console.log("Target node: ", targetNode);
 
-  if (!targetNode) return;
+  if (!targetNode) {
+    if (retryCount < maxRetries) {
+      console.log(
+        `Comments section not found. Retrying in 1 second (${
+          retryCount + 1
+        }/${maxRetries})`
+      );
+      setTimeout(
+        () => observeCommentsSection(retryCount + 1, maxRetries),
+        1000
+      );
+    } else {
+      console.log("Max retries reached. Comments section not found.");
+    }
+    return;
+  }
 
   const config = { childList: true, subtree: true };
   const observer = new MutationObserver(() => {
+    console.log("MutationObserver triggered");
     const timestampedComments = getCommentsWithTimestamps();
     if (timestampedComments.length > 0) {
       displayMarkers(timestampedComments);
-      observer.disconnect(); // Stop observing after markers are added
+      // observer.disconnect(); // Stop observing after markers are added
     }
   });
 
