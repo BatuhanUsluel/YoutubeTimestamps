@@ -118,7 +118,7 @@ function timestampToSeconds(timestamp) {
   return 0;
 }
 
-function groupCloseTimestamps(timestampedComments, threshold = 5) {
+function groupCloseTimestamps(timestampedComments, threshold = 3) {
   const groupedComments = [];
   let currentGroup = [];
 
@@ -279,7 +279,7 @@ function scrollToComment(commentElement) {
   if (commentElement) {
     commentElement.scrollIntoView({ behavior: "smooth", block: "center" });
     commentElement.style.transition = "none";
-    commentElement.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
+    commentElement.style.backgroundColor = "rgba(255, 255, 0, 0.2)";
     setTimeout(() => {
       commentElement.style.transition = "background-color 1.5s ease-out";
       commentElement.style.backgroundColor = "transparent";
