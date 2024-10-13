@@ -1,7 +1,8 @@
 # YouTube Timestamped Comments
 
 A browser extension that displays timestamped comments on the YouTube video timeline.
-![YouTube Timestamped Comments Screenshot](image.png)
+
+![YouTube Timestamped Comments Demo](DemoVid.gif)
 
 ## Installation
 
@@ -16,4 +17,5 @@ A browser extension that displays timestamped comments on the YouTube video time
 1. Navigate to any YouTube video
 2. Scroll down to load some comments
 3. The extension will automatically detect timestamped comments and display markers on the video timeline
-4. Hover over a marker to view the associated comments
+4. The extension will also load timestamps from the description
+5. Hover over a marker to view the associated comments
