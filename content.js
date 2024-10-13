@@ -334,9 +334,9 @@ function updateTooltip() {
       // Style the content as desired
       tooltipContent.innerHTML = activeMarker.comments
         .map(
-          (comment, index) => `
+          (comment) => `
             <div class="timestamp-comment">
-              <p class="timestamp-text">${comment.text}</p>
+              <p class="timestamp-text">${boldTimestamp(comment.text)}</p>
             </div>
           `
         )
@@ -345,4 +345,10 @@ function updateTooltip() {
       tooltip.appendChild(tooltipContent);
     }
   }
+}
+
+// Helper function to bold the timestamp in the comment text
+function boldTimestamp(text) {
+  const timestampPattern = /\b(\d{1,2}:\d{2}(?::\d{2})?)\b/;
+  return text.replace(timestampPattern, "<strong>$1</strong>");
 }
