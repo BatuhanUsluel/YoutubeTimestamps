@@ -37,9 +37,6 @@ function injectStyles() {
       background-color: #ff0000;
       transform: translateX(-50%);
     }
-    .timestamp-marker:hover .timestamp-tooltip {
-      display: block;
-    }
     /* Additional styles for injected content */
     .timestamp-tooltip-content {
       margin-top: 5px;
@@ -296,12 +293,11 @@ function setupProgressBarListeners() {
   const progressBar = document.querySelector(".ytp-progress-bar");
   if (progressBar) {
     progressBar.addEventListener("mousemove", onProgressBarMouseMove);
-    progressBar.addEventListener("mouseleave", updateTooltip);
+    progressBar.addEventListener("mouseleave", clearCustomTooltip);
   }
 }
 
 function onProgressBarMouseMove(event) {
-  console.log("onProgressBarMouseMove");
   const progressBar = event.currentTarget;
   const progressBarRect = progressBar.getBoundingClientRect();
   const cursorX = event.clientX - progressBarRect.left;
@@ -319,38 +315,52 @@ function onProgressBarMouseMove(event) {
 
   if (foundMarker !== activeMarker) {
     activeMarker = foundMarker;
-    updateTooltip();
+    if (activeMarker) {
+      updateTooltip();
+    } else {
+      clearCustomTooltip();
+    }
   }
 }
 
+function clearCustomTooltip() {
+  console.log("clearCustomTooltip");
+  const tooltip = document.querySelector(".ytp-tooltip.ytp-preview");
+  if (tooltip) {
+    const existingContent = tooltip.querySelector(".timestamp-tooltip-content");
+    if (existingContent) {
+      existingContent.remove();
+    }
+  }
+  activeMarker = null;
+}
+
 function updateTooltip() {
+  console.log("updateTooltip");
   const tooltip = document.querySelector(".ytp-tooltip.ytp-preview");
 
-  if (tooltip) {
-    // Remove existing injected content
+  if (tooltip && activeMarker) {
     const existingContent = tooltip.querySelector(".timestamp-tooltip-content");
     if (existingContent) {
       existingContent.remove();
     }
 
-    if (activeMarker) {
-      // Inject our comments
-      const tooltipContent = document.createElement("div");
-      tooltipContent.classList.add("timestamp-tooltip-content");
+    // Inject our comments
+    const tooltipContent = document.createElement("div");
+    tooltipContent.classList.add("timestamp-tooltip-content");
 
-      // Style the content as desired
-      tooltipContent.innerHTML = activeMarker.comments
-        .map(
-          (comment) => `
-            <div class="timestamp-comment">
-              <p class="timestamp-text">${boldTimestamp(comment.text)}</p>
-            </div>
-          `
-        )
-        .join("");
+    // Style the content as desired
+    tooltipContent.innerHTML = activeMarker.comments
+      .map(
+        (comment) => `
+          <div class="timestamp-comment">
+            <p class="timestamp-text">${boldTimestamp(comment.text)}</p>
+          </div>
+        `
+      )
+      .join("");
 
-      tooltip.appendChild(tooltipContent);
-    }
+    tooltip.appendChild(tooltipContent);
   }
 }
 
