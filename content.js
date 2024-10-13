@@ -400,11 +400,6 @@ function updateTooltip() {
     const tooltipContent = document.createElement("div");
     tooltipContent.classList.add("timestamp-tooltip-content");
 
-    // Set width based on the preview background element's inline style
-    const previewWidth = previewBg.style.width;
-    tooltipContent.style.width = previewWidth;
-    console.log("Preview width: " + previewWidth);
-
     // Display up to 5 comments
     const displayedComments = activeMarker.comments.slice(0, 5);
     const remainingComments = activeMarker.comments.length - 5;
@@ -430,6 +425,23 @@ function updateTooltip() {
     }
 
     tooltip.appendChild(tooltipContent);
+
+    // Set up a MutationObserver to watch for changes in the previewBg width
+    const observer = new MutationObserver(() => {
+      const previewWidth = previewBg.style.width;
+      tooltipContent.style.width = previewWidth;
+      console.log("Updated preview width: " + previewWidth);
+    });
+
+    // Start observing the previewBg for attribute changes
+    observer.observe(previewBg, {
+      attributes: true,
+      attributeFilter: ["style"],
+    });
+
+    // Initial width set
+    tooltipContent.style.width = previewBg.style.width;
+    console.log("Initial preview width: " + previewBg.style.width);
   }
 }
 
