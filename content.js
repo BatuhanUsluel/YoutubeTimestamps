@@ -10,7 +10,16 @@ let originalPreviewBgStyles = null;
 // Helper function to find timestamps in comments
 function findTimestamps(text) {
   const timestampPattern = /\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g;
-  return text.match(timestampPattern);
+  const matches = text.match(timestampPattern);
+  if (!matches) return null;
+
+  return matches.map((timestamp) => {
+    const parts = timestamp.split(":");
+    if (parts.length === 3 && parts[0] === "00") {
+      return `${parts[1]}:${parts[2]}`;
+    }
+    return timestamp;
+  });
 }
 
 // Inject CSS styles for markers and tooltips
