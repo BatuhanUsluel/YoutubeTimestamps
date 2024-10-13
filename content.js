@@ -1,5 +1,11 @@
 console.log("YouTube Timestamp Extension Loaded");
 
+// Global variables
+let markersData = [];
+let activeMarker = null;
+let isMouseOverTooltip = false;
+let hideTooltipTimeout = null;
+
 // Helper function to find timestamps in comments
 function findTimestamps(text) {
   const timestampPattern = /\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g;
@@ -18,7 +24,7 @@ function injectStyles() {
       transform: translateX(-50%);
       background: transparent;
       cursor: pointer;
-      pointer-events: auto;
+      pointer-events: auto; /* Prevent interfering with YouTube's tooltip */
       z-index: 10000;
     }
     .timestamp-marker::before {
@@ -34,43 +40,37 @@ function injectStyles() {
     .timestamp-marker:hover .timestamp-tooltip {
       display: block;
     }
-    .timestamp-tooltip {
-      display: none;
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(28, 28, 28, 0.95);
-      color: #ffffff;
-      padding: 12px;
-      font-size: 14px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      z-index: 10001;
-      max-width: 300px;
-      width: max-content;
+    /* Additional styles for injected content */
+    .timestamp-tooltip-content {
+      margin-top: 5px;
+      color: #fff;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 70%; /* Limit the width of the tooltip content */
+      overflow-wrap: break-word; /* Allow long words to break and wrap */
+      white-space: normal; /* Allow text to wrap */
+    }
+    .ytp-tooltip.ytp-preview {
+      max-width: 80%; /* Limit the overall width of the tooltip */
+      overflow: hidden; /* Hide any overflow */
     }
     .timestamp-comment {
-      margin-bottom: 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 5px;
     }
     .timestamp-comment:last-child {
       margin-bottom: 0;
-      padding-bottom: 0;
-      border-bottom: none;
     }
     .timestamp-text {
-      margin-bottom: 5px;
-      line-height: 1.4;
+      margin-bottom: 3px;
+      color: #000000; /* Change text color to white for better visibility */
     }
     .go-to-comment {
       background-color: #3ea6ff;
       color: #000000;
       border: none;
-      padding: 6px 12px;
-      font-size: 12px;
-      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 3px;
       cursor: pointer;
       transition: background-color 0.2s;
     }
@@ -160,37 +160,11 @@ function addMarkerToVideo(seconds, comments) {
   const leftPercent = (seconds / video.duration) * 100;
   marker.style.left = `${leftPercent}%`;
 
-  // Create tooltip element
-  const tooltip = document.createElement("div");
-  tooltip.classList.add("timestamp-tooltip");
-
-  // Display multiple comments in the tooltip
-  tooltip.innerHTML = comments
-    .map(
-      (comment, index) => `
-      <div class="timestamp-comment">
-        <p class="timestamp-text">${comment.text}</p>
-        <button class="go-to-comment" data-index="${index}">Go to comment</button>
-      </div>
-    `
-    )
-    .join("");
-
-  // Add click event listeners to the "Go to comment" buttons
-  tooltip.querySelectorAll(".go-to-comment").forEach((button) => {
-    button.addEventListener("click", (e) => {
-      e.stopPropagation(); // Prevent the marker click event from firing
-      const index = parseInt(button.getAttribute("data-index"));
-      scrollToComment(comments[index].element);
-    });
-  });
-
-  marker.appendChild(tooltip);
-
-  // Seek video to the timestamp when marker is clicked
-  marker.addEventListener("click", () => {
-    video.currentTime = seconds;
-    video.play();
+  // Store marker data for later use
+  markersData.push({
+    leftPercent: leftPercent,
+    seconds: seconds,
+    comments: comments,
   });
 
   progressBar.appendChild(marker);
@@ -201,6 +175,7 @@ function displayMarkers(timestampedComments) {
   if (!video) return;
 
   clearExistingMarkers(); // Clear existing markers before adding new ones
+  markersData = []; // Clear markers data
 
   const groupedComments = groupCloseTimestamps(timestampedComments);
 
@@ -292,6 +267,7 @@ function observeCommentsSection(retryCount = 0, maxRetries = 4) {
 window.addEventListener("load", () => {
   injectStyles();
   observeCommentsSection();
+  setupProgressBarListeners();
   console.log("YouTube Timestamp Extension Loaded");
 });
 
@@ -305,5 +281,109 @@ function scrollToComment(commentElement) {
       commentElement.style.transition = "background-color 1.5s ease-out";
       commentElement.style.backgroundColor = "transparent";
     }, 0);
+  }
+}
+
+// Setup listeners on the progress bar
+function setupProgressBarListeners() {
+  const progressBar = document.querySelector(".ytp-progress-bar");
+  if (progressBar) {
+    progressBar.addEventListener("mousemove", onProgressBarMouseMove);
+    progressBar.addEventListener("mouseleave", onProgressBarMouseLeave);
+  }
+}
+
+function onProgressBarMouseMove(event) {
+  console.log("onProgressBarMouseMove");
+  if (hideTooltipTimeout) {
+    clearTimeout(hideTooltipTimeout);
+    hideTooltipTimeout = null;
+  }
+
+  const progressBar = event.currentTarget;
+  const progressBarRect = progressBar.getBoundingClientRect();
+  const cursorX = event.clientX - progressBarRect.left;
+
+  let foundMarker = null;
+  const thresholdPixels = 5;
+
+  for (let marker of markersData) {
+    const markerX = (marker.leftPercent / 100) * progressBarRect.width;
+    if (Math.abs(cursorX - markerX) <= thresholdPixels) {
+      foundMarker = marker;
+      break;
+    }
+  }
+
+  if (foundMarker !== activeMarker) {
+    activeMarker = foundMarker;
+    updateTooltip();
+  }
+}
+
+function onProgressBarMouseLeave(event) {
+  console.log("onProgressBarMouseLeave");
+  hideTooltipTimeout = setTimeout(() => {
+    console.log("hiding tooltip");
+    activeMarker = null;
+    updateTooltip();
+  }, 3000); // 300ms delay
+}
+
+function updateTooltip() {
+  const tooltip = document.querySelector(".ytp-tooltip.ytp-preview");
+
+  if (tooltip) {
+    // Remove existing injected content
+    const existingContent = tooltip.querySelector(".timestamp-tooltip-content");
+    if (existingContent) {
+      existingContent.remove();
+    }
+
+    if (activeMarker) {
+      // Inject our comments
+      const tooltipContent = document.createElement("div");
+      tooltipContent.classList.add("timestamp-tooltip-content");
+
+      // Style the content as desired
+      tooltipContent.innerHTML = activeMarker.comments
+        .map(
+          (comment, index) => `
+            <div class="timestamp-comment">
+              <p class="timestamp-text">${comment.text}</p>
+            </div>
+          `
+          // <button class="go-to-comment" data-index="${index}">Go to comaament</button>
+        )
+        .join("");
+
+      tooltip.appendChild(tooltipContent);
+
+      // Add click event listeners to the "Go to comment" buttons
+      tooltipContent.querySelectorAll(".go-to-comment").forEach((button) => {
+        button.addEventListener("click", (e) => {
+          e.stopPropagation(); // Prevent the marker click event from firing
+          const index = parseInt(button.getAttribute("data-index"));
+          scrollToComment(activeMarker.comments[index].element);
+        });
+      });
+
+      // Add mouseenter and mouseleave event listeners to the tooltip content
+      tooltipContent.addEventListener("mouseenter", () => {
+        if (hideTooltipTimeout) {
+          clearTimeout(hideTooltipTimeout);
+          hideTooltipTimeout = null;
+        }
+        isMouseOverTooltip = true;
+      });
+      tooltipContent.addEventListener("mouseleave", () => {
+        isMouseOverTooltip = false;
+        hideTooltipTimeout = setTimeout(() => {
+          console.log("hiding tooltip");
+          activeMarker = null;
+          updateTooltip();
+        }, 3000);
+      });
+    }
   }
 }
