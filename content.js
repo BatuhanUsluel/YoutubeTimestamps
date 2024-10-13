@@ -64,19 +64,6 @@ function injectStyles() {
       margin-bottom: 3px;
       color: #000000; /* Change text color to white for better visibility */
     }
-    .go-to-comment {
-      background-color: #3ea6ff;
-      color: #000000;
-      border: none;
-      padding: 4px 8px;
-      font-size: 11px;
-      border-radius: 3px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    .go-to-comment:hover {
-      background-color: #65b8ff;
-    }
   `;
   document.head.appendChild(style);
 }
@@ -297,42 +284,17 @@ window.addEventListener("load", () => {
   console.log("YouTube Timestamp Extension Loaded");
 });
 
-// Add a new function to scroll to the comment
-function scrollToComment(commentElement, isDescription) {
-  if (commentElement) {
-    if (isDescription) {
-      // For description timestamps, expand the description if it's collapsed
-      const descriptionToggle = document.querySelector("#description #expand");
-      if (descriptionToggle) {
-        descriptionToggle.click();
-      }
-    }
-    commentElement.scrollIntoView({ behavior: "smooth", block: "center" });
-    commentElement.style.transition = "none";
-    commentElement.style.backgroundColor = "rgba(255, 255, 0, 0.2)";
-    setTimeout(() => {
-      commentElement.style.transition = "background-color 1.5s ease-out";
-      commentElement.style.backgroundColor = "transparent";
-    }, 0);
-  }
-}
-
 // Setup listeners on the progress bar
 function setupProgressBarListeners() {
   const progressBar = document.querySelector(".ytp-progress-bar");
   if (progressBar) {
     progressBar.addEventListener("mousemove", onProgressBarMouseMove);
-    progressBar.addEventListener("mouseleave", onProgressBarMouseLeave);
+    progressBar.addEventListener("mouseleave", updateTooltip);
   }
 }
 
 function onProgressBarMouseMove(event) {
   console.log("onProgressBarMouseMove");
-  if (hideTooltipTimeout) {
-    clearTimeout(hideTooltipTimeout);
-    hideTooltipTimeout = null;
-  }
-
   const progressBar = event.currentTarget;
   const progressBarRect = progressBar.getBoundingClientRect();
   const cursorX = event.clientX - progressBarRect.left;
@@ -352,15 +314,6 @@ function onProgressBarMouseMove(event) {
     activeMarker = foundMarker;
     updateTooltip();
   }
-}
-
-function onProgressBarMouseLeave(event) {
-  console.log("onProgressBarMouseLeave");
-  hideTooltipTimeout = setTimeout(() => {
-    console.log("hiding tooltip");
-    activeMarker = null;
-    updateTooltip();
-  }, 3000); // 300ms delay
 }
 
 function updateTooltip() {
@@ -386,42 +339,10 @@ function updateTooltip() {
               <p class="timestamp-text">${comment.text}</p>
             </div>
           `
-          // <button class="go-to-comment" data-index="${index}">Go to ${
-          //   comment.isDescription ? "description" : "comment"
-          // }</button>
         )
         .join("");
 
       tooltip.appendChild(tooltipContent);
-
-      // Add click event listeners to the "Go to comment/description" buttons
-      tooltipContent.querySelectorAll(".go-to-comment").forEach((button) => {
-        button.addEventListener("click", (e) => {
-          e.stopPropagation(); // Prevent the marker click event from firing
-          const index = parseInt(button.getAttribute("data-index"));
-          scrollToComment(
-            activeMarker.comments[index].element,
-            activeMarker.comments[index].isDescription
-          );
-        });
-      });
-
-      // Add mouseenter and mouseleave event listeners to the tooltip content
-      tooltipContent.addEventListener("mouseenter", () => {
-        if (hideTooltipTimeout) {
-          clearTimeout(hideTooltipTimeout);
-          hideTooltipTimeout = null;
-        }
-        isMouseOverTooltip = true;
-      });
-      tooltipContent.addEventListener("mouseleave", () => {
-        isMouseOverTooltip = false;
-        hideTooltipTimeout = setTimeout(() => {
-          console.log("hiding tooltip");
-          activeMarker = null;
-          updateTooltip();
-        }, 3000);
-      });
     }
   }
 }
