@@ -86,8 +86,28 @@ function getCommentsWithTimestamps() {
   const comments = document.querySelectorAll(
     "ytd-comment-thread-renderer #content-text"
   );
+  const description = document.querySelector(
+    "yt-attributed-string.content.style-scope.ytd-expandable-video-description-body-renderer"
+  );
+  console.log("Description: ", description.textContent);
   const timestampedComments = [];
 
+  const descriptionLines = description.textContent.split("\n");
+  descriptionLines.forEach((line) => {
+    const timestamps = findTimestamps(line);
+    if (timestamps) {
+      timestamps.forEach((timestamp) => {
+        timestampedComments.push({
+          time: timestamp,
+          text: line.trim(),
+          element: description,
+          isDescription: true,
+        });
+      });
+    }
+  });
+
+  // Process comments (existing code)
   comments.forEach((comment) => {
     const lines = comment.textContent.split("\n");
     lines.forEach((line) => {
@@ -97,14 +117,20 @@ function getCommentsWithTimestamps() {
           timestampedComments.push({
             time: timestamp,
             text: line.trim(),
-            element: comment.closest("ytd-comment-thread-renderer"), // Store the comment element
+            element: comment.closest("ytd-comment-thread-renderer"),
+            isDescription: false,
           });
         });
       }
     });
   });
 
-  console.log("Found", timestampedComments.length, "comments with timestamps");
+  console.log(
+    "Found",
+    timestampedComments.length,
+    "timestamps in description and comments"
+  );
+  console.log(timestampedComments);
   return timestampedComments;
 }
 
@@ -272,8 +298,15 @@ window.addEventListener("load", () => {
 });
 
 // Add a new function to scroll to the comment
-function scrollToComment(commentElement) {
+function scrollToComment(commentElement, isDescription) {
   if (commentElement) {
+    if (isDescription) {
+      // For description timestamps, expand the description if it's collapsed
+      const descriptionToggle = document.querySelector("#description #expand");
+      if (descriptionToggle) {
+        descriptionToggle.click();
+      }
+    }
     commentElement.scrollIntoView({ behavior: "smooth", block: "center" });
     commentElement.style.transition = "none";
     commentElement.style.backgroundColor = "rgba(255, 255, 0, 0.2)";
@@ -353,18 +386,23 @@ function updateTooltip() {
               <p class="timestamp-text">${comment.text}</p>
             </div>
           `
-          // <button class="go-to-comment" data-index="${index}">Go to comaament</button>
+          // <button class="go-to-comment" data-index="${index}">Go to ${
+          //   comment.isDescription ? "description" : "comment"
+          // }</button>
         )
         .join("");
 
       tooltip.appendChild(tooltipContent);
 
-      // Add click event listeners to the "Go to comment" buttons
+      // Add click event listeners to the "Go to comment/description" buttons
       tooltipContent.querySelectorAll(".go-to-comment").forEach((button) => {
         button.addEventListener("click", (e) => {
           e.stopPropagation(); // Prevent the marker click event from firing
           const index = parseInt(button.getAttribute("data-index"));
-          scrollToComment(activeMarker.comments[index].element);
+          scrollToComment(
+            activeMarker.comments[index].element,
+            activeMarker.comments[index].isDescription
+          );
         });
       });
 
