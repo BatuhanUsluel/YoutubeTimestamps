@@ -131,9 +131,12 @@ function timestampToSeconds(timestamp) {
   return 0;
 }
 
-function groupCloseTimestamps(timestampedComments, threshold = 3) {
+function groupCloseTimestamps(timestampedComments, videoDuration) {
   const groupedComments = [];
   let currentGroup = [];
+
+  // Set threshold to 1% of video duration
+  const threshold = videoDuration * 0.01;
 
   timestampedComments.sort(
     (a, b) => timestampToSeconds(a.time) - timestampToSeconds(b.time)
@@ -190,7 +193,11 @@ function displayMarkers(timestampedComments) {
   clearExistingMarkers(); // Clear existing markers before adding new ones
   markersData = []; // Clear markers data
 
-  const groupedComments = groupCloseTimestamps(timestampedComments);
+  const videoDuration = video.duration;
+  const groupedComments = groupCloseTimestamps(
+    timestampedComments,
+    videoDuration
+  );
 
   if (video.readyState >= 1) {
     // HAVE_METADATA
