@@ -47,9 +47,6 @@ function injectStyles() {
       background-color: #ff0000;
       transform: translateX(-50%);
     }
-    .ytp-tooltip-text.ytp-tooltip-text-no-title {
-      display: none !important;
-    }
     .timestamp-tooltip-content {
       color: #fff;
       font-family: Roboto, Arial, sans-serif;
@@ -93,13 +90,6 @@ function injectStyles() {
     .timestamp-icon {
       margin-right: 4px;
       opacity: 0.7;
-    }
-    .see-more-link {
-      color: #3ea6ff;
-      cursor: pointer;
-      display: inline-block;
-      margin-top: 4px;
-      font-size: 11px;
     }
   `;
   document.head.appendChild(style);
@@ -409,12 +399,8 @@ function updateTooltip() {
     const tooltipContent = document.createElement("div");
     tooltipContent.classList.add("timestamp-tooltip-content");
 
-    // Display up to 5 comments
-    const displayedComments = activeMarker.comments.slice(0, 5);
-    const remainingComments = activeMarker.comments.length - 5;
-
     // Style the content as desired
-    tooltipContent.innerHTML = displayedComments
+    tooltipContent.innerHTML = activeMarker.comments
       .map(
         (comment) => `
           <div class="timestamp-comment">
@@ -426,12 +412,6 @@ function updateTooltip() {
         `
       )
       .join("");
-
-    if (remainingComments > 0) {
-      tooltipContent.innerHTML += `
-        <span class="see-more-link">+${remainingComments} more</span>
-      `;
-    }
 
     tooltip.appendChild(tooltipContent);
 
