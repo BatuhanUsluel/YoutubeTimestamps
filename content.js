@@ -5,6 +5,7 @@ let markersData = [];
 let activeMarker = null;
 let isMouseOverTooltip = false;
 let hideTooltipTimeout = null;
+let originalPreviewBgStyles = null;
 
 // Helper function to find timestamps in comments
 function findTimestamps(text) {
@@ -46,7 +47,7 @@ function injectStyles() {
       font-size: 12px;
       line-height: 1.4;
       background-color: rgba(28, 28, 28, 0.9);
-      border-radius: 2px;
+      border-radius: 0 0 8px 8px;
       padding: 8px;
       box-sizing: border-box;
       max-height: 300px;
@@ -361,6 +362,13 @@ function clearCustomTooltip() {
     if (existingContent) {
       existingContent.remove();
     }
+
+    // Reset ytp-tooltip-bg styles to original state
+    const previewBg = tooltip.querySelector(".ytp-tooltip-bg");
+    if (previewBg && originalPreviewBgStyles) {
+      previewBg.style.borderRadius = originalPreviewBgStyles.borderRadius;
+      previewBg.style.outline = originalPreviewBgStyles.outline;
+    }
   }
   activeMarker = null;
 }
@@ -375,6 +383,18 @@ function updateTooltip() {
     if (existingContent) {
       existingContent.remove();
     }
+
+    // Save original styles if not already saved
+    if (!originalPreviewBgStyles) {
+      originalPreviewBgStyles = {
+        borderRadius: previewBg.style.borderRadius,
+        outline: previewBg.style.outline,
+      };
+    }
+
+    // Modify the ytp-tooltip-bg styles
+    previewBg.style.borderRadius = "0";
+    previewBg.style.outline = "none";
 
     // Inject our comments
     const tooltipContent = document.createElement("div");
