@@ -16,7 +16,7 @@ function findTimestamps(text) {
 function injectStyles() {
   const style = document.createElement("style");
   style.textContent = `
-    .timestamp-marker {
+      .timestamp-marker {
       position: absolute;
       bottom: 0;
       width: 12px;
@@ -37,29 +37,59 @@ function injectStyles() {
       background-color: #ff0000;
       transform: translateX(-50%);
     }
-    /* Additional styles for injected content */
+    .ytp-tooltip-text.ytp-tooltip-text-no-title {
+      display: none !important;
+    }
     .timestamp-tooltip-content {
-      margin-top: 5px;
       color: #fff;
+      font-family: Roboto, Arial, sans-serif;
       font-size: 12px;
       line-height: 1.4;
-      max-width: 70%; /* Limit the width of the tooltip content */
-      overflow-wrap: break-word; /* Allow long words to break and wrap */
-      white-space: normal; /* Allow text to wrap */
+      background-color: rgba(28, 28, 28, 0.9);
+      border-radius: 2px;
+      padding: 8px;
+      box-sizing: border-box;
+      max-height: 300px;
+      overflow-y: auto;
+      top: 100%;
+      left: 0;
     }
     .ytp-tooltip.ytp-preview {
-      max-width: 80%; /* Limit the overall width of the tooltip */
-      overflow: hidden; /* Hide any overflow */
+      overflow: visible !important;
     }
     .timestamp-comment {
-      margin-bottom: 5px;
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
     .timestamp-comment:last-child {
       margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
     }
     .timestamp-text {
-      margin-bottom: 3px;
-      color: #000000; /* Change text color to white for better visibility */
+      margin-bottom: 2px;
+      white-space: normal;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .timestamp-time {
+      font-weight: bold;
+      font-size: 13px;
+      color: #aaa;
+    }
+    .timestamp-icon {
+      margin-right: 4px;
+      opacity: 0.7;
+    }
+    .see-more-link {
+      color: #3ea6ff;
+      cursor: pointer;
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 11px;
     }
   `;
   document.head.appendChild(style);
@@ -338,8 +368,9 @@ function clearCustomTooltip() {
 function updateTooltip() {
   console.log("updateTooltip");
   const tooltip = document.querySelector(".ytp-tooltip.ytp-preview");
+  const previewBg = tooltip.querySelector(".ytp-tooltip-bg");
 
-  if (tooltip && activeMarker) {
+  if (tooltip && activeMarker && previewBg) {
     const existingContent = tooltip.querySelector(".timestamp-tooltip-content");
     if (existingContent) {
       existingContent.remove();
@@ -349,23 +380,41 @@ function updateTooltip() {
     const tooltipContent = document.createElement("div");
     tooltipContent.classList.add("timestamp-tooltip-content");
 
+    // Set width based on the preview background element's inline style
+    const previewWidth = previewBg.style.width;
+    tooltipContent.style.width = previewWidth;
+    console.log("Preview width: " + previewWidth);
+
+    // Display up to 5 comments
+    const displayedComments = activeMarker.comments.slice(0, 5);
+    const remainingComments = activeMarker.comments.length - 5;
+
     // Style the content as desired
-    tooltipContent.innerHTML = activeMarker.comments
+    tooltipContent.innerHTML = displayedComments
       .map(
         (comment) => `
           <div class="timestamp-comment">
-            <p class="timestamp-text">${boldTimestamp(comment.text)}</p>
+            <p class="timestamp-time">
+              <span class="timestamp-icon">🕒</span>${comment.time}
+            </p>
+            <p class="timestamp-text">${comment.text}</p>
           </div>
         `
       )
       .join("");
 
+    if (remainingComments > 0) {
+      tooltipContent.innerHTML += `
+        <span class="see-more-link">+${remainingComments} more</span>
+      `;
+    }
+
     tooltip.appendChild(tooltipContent);
   }
 }
 
-// Helper function to bold the timestamp in the comment text
-function boldTimestamp(text) {
-  const timestampPattern = /\b(\d{1,2}:\d{2}(?::\d{2})?)\b/;
-  return text.replace(timestampPattern, "<strong>$1</strong>");
+// Helper function to truncate text
+function truncateText(text, maxLength) {
+  if (text.length <= maxLength) return text;
+  return text.substr(0, maxLength) + "...";
 }
