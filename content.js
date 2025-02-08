@@ -7,7 +7,13 @@ let isMouseOverTooltip = false;
 let hideTooltipTimeout = null;
 let originalPreviewBgStyles = null;
 
-// Helper function to find timestamps in comments
+/**
+ * Scans the provided text for timestamp patterns (e.g., "mm:ss" or "hh:mm:ss").
+ * If a timestamp starts with "00:" (i.e., hours are zero), it simplifies it to "mm:ss".
+ *
+ * @param {string} text - The text to search for timestamps.
+ * @returns {Array<string>|null} An array of found timestamp strings or null if none are found.
+ */
 function findTimestamps(text) {
   const timestampPattern = /\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g;
   const matches = text.match(timestampPattern);
@@ -22,7 +28,10 @@ function findTimestamps(text) {
   });
 }
 
-// Inject CSS styles for markers and tooltips
+/**
+ * Injects custom CSS styles into the document head.
+ * These styles are required for the proper display and positioning of timestamp markers and tooltips.
+ */
 function injectStyles() {
   const style = document.createElement("style");
   style.textContent = `
@@ -95,7 +104,16 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
-// Scrape comments from YouTube's comment section
+/**
+ * Extracts and parses timestamped content from both the video description and the comments.
+ * Creates an array of objects that each contains:
+ *  - The timestamp string,
+ *  - The comment text,
+ *  - The corresponding DOM element, and
+ *  - A flag indicating if the comment originates from the video description.
+ *
+ * @returns {Array<Object>} An array of timestamped comment objects.
+ */
 function getCommentsWithTimestamps() {
   const comments = document.querySelectorAll(
     "ytd-comment-thread-renderer #content-text"
@@ -148,6 +166,12 @@ function getCommentsWithTimestamps() {
   return timestampedComments;
 }
 
+/**
+ * Converts a timestamp string (formatted as "mm:ss" or "hh:mm:ss") into the total number of seconds.
+ *
+ * @param {string} timestamp - The timestamp to convert.
+ * @returns {number} The equivalent time in seconds.
+ */
 function timestampToSeconds(timestamp) {
   const parts = timestamp.split(":").map(Number);
   if (parts.length === 2) {
@@ -158,6 +182,14 @@ function timestampToSeconds(timestamp) {
   return 0;
 }
 
+/**
+ * Groups timestamped comment objects that are within a close time range of each other.
+ * The grouping threshold is set to 1% of the video duration.
+ *
+ * @param {Array<Object>} timestampedComments - The list of timestamped comment objects.
+ * @param {number} videoDuration - The total duration of the video in seconds.
+ * @returns {Array<Array<Object>>} An array where each element is a group (array) of closely-timed comment objects.
+ */
 function groupCloseTimestamps(timestampedComments, videoDuration) {
   const groupedComments = [];
   let currentGroup = [];
@@ -191,6 +223,13 @@ function groupCloseTimestamps(timestampedComments, videoDuration) {
   return groupedComments;
 }
 
+/**
+ * Adds a visual marker to the video progress bar at the specified time.
+ * Each marker corresponds to one or more timestamped comments.
+ *
+ * @param {number} seconds - The time (in seconds) at which to place the marker.
+ * @param {Array<Object>} comments - The associated timestamped comments for this marker.
+ */
 function addMarkerToVideo(seconds, comments) {
   const video = document.querySelector("video");
   const progressBar = document.querySelector(".ytp-progress-bar");
@@ -213,6 +252,12 @@ function addMarkerToVideo(seconds, comments) {
   progressBar.appendChild(marker);
 }
 
+/**
+ * Clears any existing markers and displays new markers on the video progress bar.
+ * It groups the provided timestamped comments and adds one marker per group.
+ *
+ * @param {Array<Object>} timestampedComments - The list of timestamped comments.
+ */
 function displayMarkers(timestampedComments) {
   const video = document.querySelector("video");
   if (!video) return;
@@ -242,6 +287,14 @@ function displayMarkers(timestampedComments) {
   }
 }
 
+/**
+ * Returns a debounced version of the provided function that delays its execution
+ * until after a specified delay period (in milliseconds) has elapsed since the last invocation.
+ *
+ * @param {Function} func - The function to debounce.
+ * @param {number} wait - The number of milliseconds to delay.
+ * @returns {Function} A debounced version of the input function.
+ */
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -254,12 +307,23 @@ function debounce(func, wait) {
   };
 }
 
+/**
+ * Removes all timestamp markers currently displayed on the video progress bar.
+ * This prevents duplicate markers when re-rendering based on new comment data.
+ */
 function clearExistingMarkers() {
   const existingMarkers = document.querySelectorAll(".timestamp-marker");
   existingMarkers.forEach((marker) => marker.remove());
 }
 
-// Wait for the comments to load
+/**
+ * Observes the YouTube comments section for changes using a MutationObserver.
+ * If the comments section is not initially found, it will retry up to a maximum number of times.
+ * When changes are detected, it triggers the parsing of comments to update timestamp markers.
+ *
+ * @param {number} [retryCount=0] - The current retry attempt count.
+ * @param {number} [maxRetries=4] - The maximum number of retry attempts.
+ */
 function observeCommentsSection(retryCount = 0, maxRetries = 4) {
   const targetNode = document.querySelector("#comments");
   console.log("Target node: ", targetNode);
@@ -310,15 +374,10 @@ function observeCommentsSection(retryCount = 0, maxRetries = 4) {
   }
 }
 
-// Run script after the page fully loads
-window.addEventListener("load", () => {
-  injectStyles();
-  observeCommentsSection();
-  setupProgressBarListeners();
-  console.log("YouTube Timestamp Extension Loaded");
-});
-
-// Setup listeners on the progress bar
+/**
+ * Attaches event listeners to the video progress bar to handle mouse interactions.
+ * Listeners include handling mouse movement for displaying tooltips and clearing them when the mouse leaves.
+ */
 function setupProgressBarListeners() {
   const progressBar = document.querySelector(".ytp-progress-bar");
   if (progressBar) {
@@ -327,6 +386,12 @@ function setupProgressBarListeners() {
   }
 }
 
+/**
+ * Handles mouse movement over the progress bar.
+ * Checks if the cursor is near any timestamp marker, and if so, updates the tooltip to display the associated comments.
+ *
+ * @param {MouseEvent} event - The mouse event object.
+ */
 function onProgressBarMouseMove(event) {
   const progressBar = event.currentTarget;
   const progressBarRect = progressBar.getBoundingClientRect();
@@ -353,6 +418,10 @@ function onProgressBarMouseMove(event) {
   }
 }
 
+/**
+ * Clears the custom tooltip that displays timestamped comment details.
+ * Restores any modified styles of the YouTube tooltip background to their original state.
+ */
 function clearCustomTooltip() {
   console.log("clearCustomTooltip");
   const tooltip = document.querySelector(".ytp-tooltip.ytp-preview");
@@ -372,6 +441,11 @@ function clearCustomTooltip() {
   activeMarker = null;
 }
 
+/**
+ * Updates the custom tooltip on the progress bar to display details of timestamped comments
+ * when the user hovers near a marker.
+ * Modifies the YouTube tooltip element by injecting additional content and setting up an observer to adjust to style changes.
+ */
 function updateTooltip() {
   console.log("updateTooltip");
   const tooltip = document.querySelector(".ytp-tooltip.ytp-preview");
@@ -434,8 +508,22 @@ function updateTooltip() {
   }
 }
 
-// Helper function to truncate text
+/**
+ * Truncates the provided text to a specified maximum length and appends an ellipsis ("...") if truncation occurs.
+ *
+ * @param {string} text - The text to be truncated.
+ * @param {number} maxLength - The maximum allowed length of the text.
+ * @returns {string} The truncated text if it exceeds maxLength, otherwise the original text.
+ */
 function truncateText(text, maxLength) {
   if (text.length <= maxLength) return text;
   return text.substr(0, maxLength) + "...";
 }
+
+// Run script after the page fully loads
+window.addEventListener("load", () => {
+  injectStyles();
+  observeCommentsSection();
+  setupProgressBarListeners();
+  console.log("YouTube Timestamp Extension Loaded");
+});
